@@ -1,4 +1,4 @@
-name: Deploy to EC2
+name: Deploy Node.js App
 
 on:
   push:
@@ -8,25 +8,27 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Decode SSH Key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY_NEW }}" | base64 -d > private_key
+          chmod 600 private_key
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@v0.1.6
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          cd ~/app || mkdir ~/app && cd ~/app
-          if [ ! -d ".git" ]; then
-            git clone https://github.com/rohitmane-dev/Deploy_Node.js_AWS_EC2 .
-          else
-            git pull origin main
-          fi
-          docker stop myapp || true
-          docker rm myapp || true
-          docker build -t myapp .
-          docker run -d --restart unless-stopped -p 80:3000 --name myapp myapp
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key_path: private_key
+          script: |
+            mkdir -p ~/app
+            cd ~/app
+            if [ ! -d ".git" ]; then
+              git clone https://github.com/rohitmane-dev/Deploy_Node.js_AWS_EC2.git .
+            else
+              git pull origin main
+            fi
+            docker stop myapp || true
+            docker rm myapp || true
+            docker build -t myapp .
+            docker run -d --restart unless-stopped -p 80:3000 --name myapp myapp
