@@ -7,29 +7,15 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Setup SSH Agent
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.EC2_SSH_KEY_NEW }}
-
-    - name: Deploy to EC2
+    - name: Build and Restart Container
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
-          mkdir -p ~/app
-          cd ~/app
-          if [ ! -d ".git" ]; then
-            git clone https://github.com/rohitmane-dev/Deploy_Node.js_AWS_EC2.git .
-          else
-            git pull origin main
-          fi
-          docker stop myapp || true
-          docker rm myapp || true
-          docker build -t myapp .
-          docker run -d --restart unless-stopped -p 80:3000 --name myapp myapp
-        EOF
+        docker stop myapp || true
+        docker rm myapp || true
+        docker build -t myapp .
+        docker run -d --restart unless-stopped -p 80:3000 --name myapp myapp
