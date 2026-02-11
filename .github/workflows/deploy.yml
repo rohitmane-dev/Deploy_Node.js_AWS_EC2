@@ -13,17 +13,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@v0.1.6
+    - name: Setup SSH Agent
+      uses: webfactory/ssh-agent@v0.9.0
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY_NEW }}
-        port: 22
-        script: |
-          cd ~/app || mkdir ~/app && cd ~/app
+        ssh-private-key: ${{ secrets.EC2_SSH_KEY_NEW }}
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          mkdir -p ~/app
+          cd ~/app
           if [ ! -d ".git" ]; then
-            git clone https://github.com/rohitmane-dev/Deploy_Node.js_AWS_EC2 .
+            git clone https://github.com/rohitmane-dev/Deploy_Node.js_AWS_EC2.git .
           else
             git pull origin main
           fi
@@ -31,3 +32,4 @@ jobs:
           docker rm myapp || true
           docker build -t myapp .
           docker run -d --restart unless-stopped -p 80:3000 --name myapp myapp
+        EOF
