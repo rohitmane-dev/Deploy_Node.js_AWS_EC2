@@ -4,7 +4,7 @@ const PORT = process.env.PORT || 3000
 let app = express()
 
 app.get('/', (req, res) => {
-  res.send('hi')
+  res.send('hello world')
 })
 
 // Custom 404 route not found handler
