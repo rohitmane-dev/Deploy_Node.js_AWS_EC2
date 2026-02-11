@@ -1,0 +1,37 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to the app directory
+            cd /home/ec2-user/app
+            
+            # Pull the latest code
+            git pull origin main
+            
+            # Build the Docker image
+            docker build -t node-app .
+            
+            # Stop and remove the existing container if running
+            docker stop node-app-container || true
+            docker rm node-app-container || true
+            
+            # Run the new container
+            docker run -d -p 80:3000 --name node-app-container node-app
